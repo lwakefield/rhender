@@ -5,11 +5,24 @@ from unittest.mock import patch
 from vibora.tests import TestSuite, wrapper as asynctest
 
 from rhender.config import Config
+from rhender.cd import cd
 
 
 class TestRender(TestSuite):
     repository_url = 'file://%s/examples' % os.path.dirname(__file__)
     encoded_url = urllib.parse.quote_plus(repository_url)
+
+    def setup_class(cls):
+        with cd('tests/examples'):
+            os.system('git init')
+            os.system('git add -A')
+            os.system('git config --global user.email "you@example.com"')
+            os.system('git config --global user.name "Your Name"')
+            os.system('git commit -m "add files"')
+
+    def teardown_class(cls):
+        with cd('tests/examples'):
+            os.system('rm -rf .git')
 
     def setup_method(self, method):
         from rhender.main import app
