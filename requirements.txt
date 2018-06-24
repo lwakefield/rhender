@@ -1,0 +1,17 @@
+atomicwrites==1.1.5
+attrs==18.1.0
+Jinja2==2.10
+MarkupSafe==1.0
+more-itertools==4.2.0
+pendulum==2.0.2
+pluggy==0.6.0
+py==1.5.3
+pystache==0.5.4
+pytest==3.6.2
+python-dateutil==2.7.3
+pytzdata==2018.5
+six==1.11.0
+ujson==1.35
+uvloop==0.10.1
+vibora==0.0.6
+Werkzeug==0.14.1
