@@ -25,7 +25,7 @@ class Project(Model):
 
     def pull(self):
         if not os.path.isdir(self.local_path):
-            sh('git clone %s %s' % (self.repository_url, self.local_path))
+            sh(['git', 'clone', self.repository_url, self.local_path])
         else:
             with cd(self.local_path):
                 sh('git pull origin master')
@@ -36,10 +36,14 @@ class Project(Model):
 
     @property
     def local_path(self):
-        return config.DATA_DIR + '/' + self.id
+        return '%s/%s' % (config.DATA_DIR, self.id)
 
     def list_files(self):
         with cd(self.local_path):
-            output = sh('git ls-tree -r --name-only master')
-        paths = output.split('\n')
+            output = sh(['git', 'ls-tree', '-r', '--name-only', 'master'])
+        paths = [
+            path.strip()
+            for path in str(output, 'utf-8').split('\n')
+            if path.strip()
+        ]
         return paths
