@@ -4,8 +4,9 @@ from unittest.mock import patch
 
 from vibora.tests import TestSuite, wrapper as asynctest
 
-from rhender.config import Config
+from rhender import config
 from rhender.cd import cd
+from rhender.main import app
 
 
 class TestRender(TestSuite):
@@ -19,14 +20,11 @@ class TestRender(TestSuite):
             os.system('git config --global user.email "you@example.com"')
             os.system('git config --global user.name "Your Name"')
             os.system('git commit -m "add files"')
+        cls.client = app.test_client()
 
     def teardown_class(cls):
         with cd('tests/examples'):
             os.system('rm -rf .git')
-
-    def setup_method(self, method):
-        from rhender.main import app
-        self.client = app.test_client()
 
     def teardown_method(self, method):
         os.system('rm -r /data/*')
@@ -44,13 +42,13 @@ class TestRender(TestSuite):
             }
         )
 
-        assert os.path.isdir(Config.DATA_DIR + '/' + self.encoded_url)
+        assert os.path.isdir(config.DATA_DIR + '/' + self.encoded_url)
         assert response.content.decode('utf-8') == \
             '<h1>hello world</h1>\nAgain, hello world!\n'
 
     # I haven't been able to get patching working...
     @asynctest
-    @patch('os.system')
+    @patch('rhender.main.os')
     async def test_multiple_renders(self, sys):
         json = {
             'repository_url': self.repository_url,
@@ -84,7 +82,7 @@ class TestRender(TestSuite):
             }
         )
 
-        assert os.path.isdir(Config.DATA_DIR + '/' + encoded_url)
+        assert os.path.isdir(config.DATA_DIR + '/' + encoded_url)
         # jinja trims whitespace(?), so there is no trailing \n
         assert response.content.decode('utf-8') == \
             '<h1>hello world</h1>\nAgain, hello world!'
