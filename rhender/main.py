@@ -1,6 +1,7 @@
 import os
 import urllib.parse
 import subprocess
+import re
 from base64 import b64encode, b64decode
 
 from vibora import Vibora, Request
@@ -65,21 +66,27 @@ async def files(project_id: int):
     return JsonResponse(paths)
 
 
-@app.route('v1/repo/<project_id>/files/<path>', methods=['GET'])
-async def file(project_id: int, path: str):
+# TODO we want pattern matching to do this for us...
+@app.route('/v1/project/<project_id>/files/.+', methods=['GET'])
+async def file(project_id: int, request: Request):
+    pattern = re.compile(b'/v1/project/[^/]+/files/(.+)')
+    match = pattern.match(request.url)
+    path = str(match.group(1), 'utf-8')
+
     project = Project.find_or_fail(project_id)
     project.pull()
+
 
     with open(project.local_path + '/' + path) as f:
         file_data = f.read()
 
-    encoded_file_data = str(b64encode(file_data), 'utf-8')
+    encoded_file_data = b64encode(bytes(file_data, 'utf-8'))
 
     return JsonResponse({'data': encoded_file_data})
 
 
 @app.route('v1/repo/<project_id>/files/<path>', methods=['PUT'])
-async def write_file(project_id: int, path: str, request):
+async def write_file(project_id: int, path: str, request: Request):
     body = await request.json()
 
     project = Project.find_or_fail(project_id)

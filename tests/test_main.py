@@ -102,21 +102,11 @@ class TestRender(TestSuite):
             'inner_partial.mustache',
             'template_partial.mustache'
         ]
-        # response = await self.client.post(
-        #     '/v1/render',
-        #     json={
-        #         'repository_url': repository_url,
-        #         'entry': 'index.html',
-        #         'data': {
-        #             'title': 'hello world',
-        #         },
-        #         'type': 'jinja',
-        #     }
-        # )
 
-        # assert os.path.isdir(config.DATA_DIR + '/' + encoded_url)
-        # # jinja trims whitespace(?), so there is no trailing \n
-        # assert response.content.decode('utf-8') == \
-        #     '<h1>hello world</h1>\nAgain, hello world!'
-
+    async def test_get_file(self):
+        response = await self.client.get('/v1/project/%s/files/index.html' % self.test_project.id)
+        assert response.status_code == 200
+        assert response.json() == {
+            'data': 'PGgxPnt7dGl0bGV9fTwvaDE+CnslIGluY2x1ZGUgJ2NoaWxkLmh0bWwnICV9Cg=='
+        }
 
