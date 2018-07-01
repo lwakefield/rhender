@@ -5,6 +5,7 @@ from orator import DatabaseManager, Model
 
 from rhender import config
 from rhender.cd import cd
+from rhender.shell import shell
 
 DATABASES = {
     'sqlite': {
@@ -20,19 +21,19 @@ Model.set_connection_resolver(db)
 class Project(Model):
 
     def head_hash(self):
-        head_hash = sh('git rev-parse HEAD')
+        head_hash = shell('git rev-parse HEAD')
         return head_hash.strip()
 
     def pull(self):
         if not os.path.isdir(self.local_path):
-            sh(['git', 'clone', self.repository_url, self.local_path])
+            shell('git clone %s %s' % (self.repository_url, self.local_path))
         else:
             with cd(self.local_path):
-                sh('git pull origin master')
+                shell('git pull origin master')
 
     def commit(self):
         with cd(self.local_path):
-            sh('git commit -A -m "Make change to file"')
+            shell('git commit -A -m "Make change to file"')
 
     @property
     def local_path(self):
@@ -40,7 +41,7 @@ class Project(Model):
 
     def list_files(self):
         with cd(self.local_path):
-            output = sh(['git', 'ls-tree', '-r', '--name-only', 'master'])
+            output = shell('git ls-tree -r --name-only master')
         paths = [
             path.strip()
             for path in str(output, 'utf-8').split('\n')

@@ -85,12 +85,19 @@ async def file(project_id: int, request: Request):
     return JsonResponse({'data': encoded_file_data})
 
 
-@app.route('v1/repo/<project_id>/files/<path>', methods=['PUT'])
-async def write_file(project_id: int, path: str, request: Request):
+# TODO we want pattern matching to do this for us...
+@app.route('/v1/project/<project_id>/files/.+', methods=['PUT'])
+async def file(project_id: int, request: Request):
+    pattern = re.compile(b'/v1/project/[^/]+/files/(.+)')
+    match = pattern.match(request.url)
+    path = str(match.group(1), 'utf-8')
+
     body = await request.json()
 
     project = Project.find_or_fail(project_id)
     project.pull()
+
+    import pdb; pdb.set_trace()
 
     if body.get('head_hash') != project.head_hash():
         return Response(status=409)
