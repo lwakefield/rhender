@@ -21,8 +21,9 @@ Model.set_connection_resolver(db)
 class Project(Model):
 
     def head_hash(self):
-        head_hash = shell('git rev-parse HEAD')
-        return head_hash.strip()
+        with cd(self.local_path):
+            head_hash = shell('git rev-parse HEAD')
+        return str(head_hash.strip(), 'utf-8')
 
     def pull(self):
         if not os.path.isdir(self.local_path):
@@ -33,7 +34,7 @@ class Project(Model):
 
     def commit(self):
         with cd(self.local_path):
-            shell('git commit -A -m "Make change to file"')
+            shell('git commit --all --message "Make change to file"')
 
     @property
     def local_path(self):

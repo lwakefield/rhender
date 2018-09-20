@@ -97,19 +97,20 @@ async def file(project_id: int, request: Request):
     project = Project.find_or_fail(project_id)
     project.pull()
 
-    import pdb; pdb.set_trace()
-
     if body.get('head_hash') != project.head_hash():
         return Response(status=409)
+
 
     filename = project.local_path + '/' + path
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     with open(filename, 'w') as f:
-        data = b64decode(body.get('data'), 'utf-8')
-        f.write(data)
+        data = b64decode(body.get('data'))
+        f.write(str(data, 'utf-8'))
 
     project.commit()
+
+    import pdb; pdb.set_trace()
 
     # return new hash?
     return JsonResponse({'head_hash': project.head_hash()})

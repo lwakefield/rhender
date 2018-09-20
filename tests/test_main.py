@@ -2,11 +2,14 @@ import os
 import urllib.parse
 from unittest.mock import patch
 import pytest
+from base64 import b64encode
+from subprocess import check_output as sh
 
 from vibora.tests import TestSuite
 
 from rhender import config
 from rhender.cd import cd
+from rhender.shell import shell
 from rhender.main import app
 from rhender.db import Project
 
@@ -110,3 +113,22 @@ class TestRender(TestSuite):
             'data': 'PGgxPnt7dGl0bGV9fTwvaDE+CnslIGluY2x1ZGUgJ2NoaWxkLmh0bWwnICV9Cg=='
         }
 
+    async def test_write_file(self):
+        with cd('tests/examples'):
+            head_hash = sh(['git', 'rev-parse', 'HEAD']).strip()
+
+        response = await self.client.request(
+            method='PUT',
+            url='/v1/project/%s/files/index.html' % self.test_project.id,
+            json={
+                'data': b64encode(b'foobar'),
+                'head_hash': head_hash,
+            }
+        )
+
+    #     import pdb; pdb.set_trace()
+    #     pass
+    #     # assert response.status_code == 200
+    #     # assert response.json() == {
+    #     #     'data': 'PGgxPnt7dGl0bGV9fTwvaDE+CnslIGluY2x1ZGUgJ2NoaWxkLmh0bWwnICV9Cg=='
+    #     # }
