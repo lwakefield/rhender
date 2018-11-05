@@ -4,9 +4,8 @@ import subprocess
 import re
 from base64 import b64encode, b64decode
 
-from vibora import Vibora, Request
-from vibora.responses import JsonResponse, Response
-from werkzeug._reloader import run_with_reloader
+from flask import Flask, jsonify, Response, request
+
 from pystache import Renderer
 from jinja2 import Environment, FileSystemLoader
 
@@ -14,12 +13,14 @@ from rhender import config
 from rhender.cd import cd
 from rhender.db import Project
 
-app = Vibora()
+app = Flask(__name__)
 
 
 @app.route('/v1/render', methods=['POST'])
-async def render(request: Request):
-    body = await request.json()
+def render():
+    body = request.json
+    assert body is not None
+
     repository_url = body.get('repository_url')
     encoded_url = urllib.parse.quote_plus(repository_url)
     project_path = config.DATA_DIR + '/' + encoded_url
@@ -52,14 +53,12 @@ async def render(request: Request):
 
     return Response(
         content=bytes(result, 'utf-8'),
-        headers={
-            'Content-Type': 'text/plain'
-        }
+        content_type='text/plain'
     )
 
 
 @app.route('/v1/project/<project_id>/files', methods=['GET'])
-async def files(project_id: int):
+def files(project_id):
     project = Project.find_or_fail(project_id)
     project.pull()
     paths = project.list_files()
@@ -68,38 +67,36 @@ async def files(project_id: int):
 
 # TODO we want pattern matching to do this for us...
 @app.route('/v1/project/<project_id>/files/.+', methods=['GET'])
-async def file(project_id: int, request: Request):
+def get_file(project_id, request):
     pattern = re.compile(b'/v1/project/[^/]+/files/(.+)')
     match = pattern.match(request.url)
     path = str(match.group(1), 'utf-8')
 
     project = Project.find_or_fail(project_id)
     project.pull()
-
 
     with open(project.local_path + '/' + path) as f:
         file_data = f.read()
 
     encoded_file_data = b64encode(bytes(file_data, 'utf-8'))
 
-    return JsonResponse({'data': encoded_file_data})
+    return jsonify({'data': encoded_file_data})
 
 
 # TODO we want pattern matching to do this for us...
 @app.route('/v1/project/<project_id>/files/.+', methods=['PUT'])
-async def file(project_id: int, request: Request):
+def put_file(project_id, request):
     pattern = re.compile(b'/v1/project/[^/]+/files/(.+)')
     match = pattern.match(request.url)
     path = str(match.group(1), 'utf-8')
 
-    body = await request.json()
+    body = request.json
 
     project = Project.find_or_fail(project_id)
     project.pull()
 
     if body.get('head_hash') != project.head_hash():
         return Response(status=409)
-
 
     filename = project.local_path + '/' + path
     os.makedirs(os.path.dirname(filename), exist_ok=True)
@@ -113,10 +110,4 @@ async def file(project_id: int, request: Request):
     import pdb; pdb.set_trace()
 
     # return new hash?
-    return JsonResponse({'head_hash': project.head_hash()})
-
-if __name__ == '__main__':
-    def run():
-        app.run(debug=config.DEBUG, host='0.0.0.0', port=config.PORT)
-
-    run_with_reloader(run)
+    return jsonify({'head_hash': project.head_hash()})
